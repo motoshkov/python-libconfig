@@ -116,6 +116,11 @@ public:
         config->lookup ( path ).remove ( name );
     }
 
+    void removeFromList ( const char * path, unsigned int id )
+    {
+        config->lookup ( path ).remove ( id );
+    }
+
     void addBoolean ( const char * path, const char * name )
     {
         config->lookup ( path ).add ( name, libconfig::Setting::TypeBoolean );
@@ -263,6 +268,7 @@ BOOST_PYTHON_MODULE ( pylibconfig )
         .def("children", &pyConfig::children_root )
         .def("value", &pyConfig::value )
         .def("remove", &pyConfig::remove )
+        .def("removeFromList", &pyConfig::removeFromList )
         .def("addString", &pyConfig::addString )
         .def("addBoolean", &pyConfig::addBoolean )
         .def("addBigInteger", &pyConfig::addBigInteger )
