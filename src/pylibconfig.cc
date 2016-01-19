@@ -156,9 +156,39 @@ public:
         config->lookup ( path ).add ( name, libconfig::Setting::TypeArray );
     }
 
-    void appendToList ( const char * path, const char * value )
+    void appendBooleanToList ( const char * path )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeString ) = value;
+        config->lookup ( path ).add ( libconfig::Setting::TypeBoolean );
+    }
+
+    void appendBigIntegerToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeInt64 );
+    }
+
+    void appendIntegerToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeInt );
+    }
+
+    void appendFloatToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeFloat );
+    }
+
+    void appendStringToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeString );
+    }
+
+    void appendGroupToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeGroup );
+    }
+
+    void appendArrayToList ( const char * path )
+    {
+        config->lookup ( path ).add ( libconfig::Setting::TypeArray );
     }
 
     void setValue_bool ( const char * path, bool value )
@@ -201,6 +231,16 @@ public:
         config->lookup ( path ) = value;
     }
 
+    void setIncludeDir (const char *includeDir)
+    {
+        config->setIncludeDir(includeDir);
+    }
+
+    const char * getIncludeDir ()
+    {
+        return config->getIncludeDir();
+    }
+
 private:
     Config * config;
 };
@@ -238,6 +278,14 @@ BOOST_PYTHON_MODULE ( pylibconfig )
         .def("setValue", &pyConfig::setValue_long )
         .def("setValue", &pyConfig::setValue_int )
         .def("setValue", &pyConfig::setValue_str )
-        .def("appendToList", &pyConfig::appendToList )
+        .def("appendBooleanToList", &pyConfig::appendBooleanToList )
+        .def("appendBigIntegerToList", &pyConfig::appendBigIntegerToList )
+        .def("appendIntegerToList", &pyConfig::appendIntegerToList )
+        .def("appendFloatToList", &pyConfig::appendFloatToList )
+        .def("appendStringToList", &pyConfig::appendStringToList )
+        .def("appendArrayToList", &pyConfig::appendArrayToList )
+        .def("appendGroupToList", &pyConfig::appendGroupToList )
+        .def("setIncludeDir", &pyConfig::setIncludeDir )
+        .def("getIncludeDir", &pyConfig::getIncludeDir )
     ;
 }
