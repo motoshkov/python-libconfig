@@ -11,6 +11,7 @@ public:
     pyConfig ()
     {
         config = new Config ();
+        config->setTabWidth(4);
     }
 
     ~pyConfig ()
@@ -18,14 +19,29 @@ public:
         delete config;
     }
 
-    void read ( FILE * stream )
-    {   config->read ( stream );    }
+    void read(object& file)
+    {
+        try {
+            config->read(getFILEfromObj(file));
+        } catch (const ParseException& e) {
+            throwParseException(e);
+        }
+    }
 
-    void write ( FILE * stream )
-    {   config->write ( stream );   }
+    void write(object& file)
+    {
+        config->write(getFILEfromObj(file));
+    }
 
-    void readFile ( const char * filename )
-    {   config->readFile ( filename ); }
+    void readFile(const char * filename)
+    {
+        try {
+            config->readFile(filename);
+        }
+        catch (const ParseException& e) {
+            throwParseException(e);
+        }
+    }
 
     void writeFile ( const char * filename )
     {   config->writeFile ( filename );    }
@@ -42,8 +58,12 @@ public:
     void setAutoConvert ( bool flag )
     {   config->setAutoConvert ( flag );  }
 
-    bool exists ( const char * path )
-    {   return config->exists ( path ); }
+    bool exists(const char * path)
+    {
+        if (path == NULL)
+            return false;
+        return config->exists(path);
+    }
 
     tuple value ( const char * path )
     {   
@@ -121,29 +141,29 @@ public:
         config->lookup ( path ).remove ( id );
     }
 
-    void addBoolean ( const char * path, const char * name )
+    void addBoolean ( const char * path, const char * name, bool value )
     {
-        config->lookup ( path ).add ( name, libconfig::Setting::TypeBoolean );
+        config->lookup ( path ).add ( name, libconfig::Setting::TypeBoolean ) = value;
     }
 
-    void addBigInteger ( const char * path, const char * name )
+    void addBigInteger ( const char * path, const char * name, long long value )
     {
-        config->lookup ( path ).add ( name, libconfig::Setting::TypeInt64 );
+        config->lookup ( path ).add ( name, libconfig::Setting::TypeInt64 ) = value;
     }
 
-    void addInteger ( const char * path, const char * name )
+    void addInteger ( const char * path, const char * name, int value )
     {
-        config->lookup ( path ).add ( name, libconfig::Setting::TypeInt );
+        config->lookup ( path ).add ( name, libconfig::Setting::TypeInt ) = value;
     }
 
-    void addFloat ( const char * path, const char * name )
+    void addFloat ( const char * path, const char * name, double value )
     {
-        config->lookup ( path ).add ( name, libconfig::Setting::TypeFloat );
+        config->lookup ( path ).add ( name, libconfig::Setting::TypeFloat ) = value;
     }
 
-    void addString ( const char * path, const char * name )
+    void addString ( const char * path, const char * name, const char* value )
     {
-        config->lookup ( path ).add ( name, libconfig::Setting::TypeString );
+        config->lookup ( path ).add ( name, libconfig::Setting::TypeString ) = value;
     }
 
     void addGroup ( const char * path, const char * name )
@@ -161,40 +181,46 @@ public:
         config->lookup ( path ).add ( name, libconfig::Setting::TypeArray );
     }
 
-    void appendBooleanToList ( const char * path )
+    std::string appendBooleanToList ( const char * path, bool value )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeBoolean );
+        return appendToList(path, libconfig::Setting::TypeBoolean, value);
     }
 
-    void appendBigIntegerToList ( const char * path )
+    std::string appendBigIntegerToList ( const char * path, long long value )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeInt64 );
+        return appendToList(path, libconfig::Setting::TypeInt64, value);
     }
 
-    void appendIntegerToList ( const char * path )
+    std::string appendIntegerToList ( const char * path, int value )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeInt );
+        return appendToList(path, libconfig::Setting::TypeInt, value);
     }
 
-    void appendFloatToList ( const char * path )
+    std::string appendFloatToList ( const char * path, double value )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeFloat );
+        return appendToList(path, libconfig::Setting::TypeFloat, value);
     }
 
-    void appendStringToList ( const char * path )
+    std::string appendStringToList ( const char * path, const char* value )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeString );
+        return appendToList(path, libconfig::Setting::TypeString, value);
     }
 
-    void appendGroupToList ( const char * path )
+    std::string appendGroupToList ( const char * path )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeGroup );
+        return config->lookup ( path ).add ( libconfig::Setting::TypeGroup ).getPath();
     }
 
-    void appendArrayToList ( const char * path )
+    std::string appendArrayToList ( const char * path )
     {
-        config->lookup ( path ).add ( libconfig::Setting::TypeArray );
+        return config->lookup ( path ).add ( libconfig::Setting::TypeArray ).getPath();
     }
+
+    std::string appendListToList ( const char * path )
+    {
+        return config->lookup ( path ).add ( libconfig::Setting::TypeList ).getPath();
+    }
+
 
     void setValue_bool ( const char * path, bool value )
     {
@@ -246,8 +272,37 @@ public:
         return config->getIncludeDir();
     }
 
+    Setting::Type getType(const char* path)
+    {
+        return config->lookup(path).getType();
+    }
+
 private:
     Config * config;
+
+    void throwParseException(const ParseException& e)
+    {
+        throw std::runtime_error(std::string("ParseException: Parse error at ") + e.getFile() + ":" + std::to_string(e.getLine()) + " - " + e.getError());
+    }
+
+    template<typename T>
+    std::string appendToList(const char * path, Setting::Type type, const T& value)
+    {
+        Setting& s = config->lookup(path).add(type);
+        s = value;
+        return s.getPath();
+    }
+
+    FILE* getFILEfromObj(const object& o)
+    {
+        PyObject* p = o.ptr();
+        if (PyFile_Check(p)) {
+            return PyFile_AsFile(p);
+        }
+        else {
+            throw std::runtime_error("Not a file object");
+        }
+    }
 };
 
 BOOST_PYTHON_MODULE ( pylibconfig )
@@ -291,7 +346,21 @@ BOOST_PYTHON_MODULE ( pylibconfig )
         .def("appendStringToList", &pyConfig::appendStringToList )
         .def("appendArrayToList", &pyConfig::appendArrayToList )
         .def("appendGroupToList", &pyConfig::appendGroupToList )
+        .def("appendListToList", &pyConfig::appendListToList )
         .def("setIncludeDir", &pyConfig::setIncludeDir )
         .def("getIncludeDir", &pyConfig::getIncludeDir )
+        .def("getType", &pyConfig::getType )
+    ;
+
+    enum_<Setting::Type>("Type")
+         .value("None", Setting::Type::TypeNone)
+         .value("Int", Setting::Type::TypeInt)
+         .value("Int64", Setting::Type::TypeInt64)
+         .value("Float", Setting::Type::TypeFloat)
+         .value("String", Setting::Type::TypeString)
+         .value("Boolean", Setting::Type::TypeBoolean)
+         .value("Group", Setting::Type::TypeGroup)
+         .value("Array", Setting::Type::TypeArray)
+         .value("List", Setting::Type::TypeList)
     ;
 }

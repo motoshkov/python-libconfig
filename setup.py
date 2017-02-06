@@ -46,6 +46,7 @@ setup(
             ["src/pylibconfig.cc"],
             include_dirs=include_dirs,
             library_dirs=library_dirs,
+            extra_compile_args=['-std=c++11'],
             libraries=libraries
         )
     ]

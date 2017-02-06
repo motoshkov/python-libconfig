@@ -1,7 +1,7 @@
 Summary: A python interface to libconfig
 Name: python-libconfig
 Version: 0.0.2
-Release: 2
+Release: 3
 License: bsd
 Group: Development/Libraries
 Source0: %{name}-%{version}.tar.gz
@@ -12,7 +12,7 @@ BuildRequires: boost-devel python-devel libconfig libconfig-devel python-setupto
 Requires: libconfig
 
 %description
-Python interface to libconfig
+Python interface to libconfig.
 
 %prep
 %setup -q
